@@ -21,6 +21,8 @@ pub struct OutlineMaterial {
     pub vertex_color_mode: i32,
     #[uniform(0)]
     pub brightness: f32,
+    #[uniform(0)]
+    pub visibility: f32,
 }
 
 impl Material for OutlineMaterial {
@@ -68,6 +70,7 @@ impl Default for OutlineMaterial {
             z_translate: 0.1,
             vertex_color_mode: 0,
             brightness: 15.0,
+            visibility: 1.0,
         }
     }
 }

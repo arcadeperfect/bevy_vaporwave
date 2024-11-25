@@ -22,6 +22,9 @@ pub struct FillMaterial {
     pub specular_strength: f32,
     #[uniform(0)]
     pub vertex_color_mode: i32,
+    #[uniform(0)]
+
+    pub visibility: f32,
 }
 
 impl Default for FillMaterial {
@@ -32,6 +35,7 @@ impl Default for FillMaterial {
             shininess: 200.0,
             specular_strength: 1.0,
             vertex_color_mode: 0,
+            visibility: 1.0,
         }
     }
 }

@@ -85,6 +85,9 @@ struct ShaderSettings {
     brightness: f32,
     vertex_color_mode: i32,
     color: Color,
+    show_wireframe: bool,
+    show_outline: bool,
+    show_fill: bool,
 }
 
 impl Default for ShaderSettings {
@@ -98,6 +101,9 @@ impl Default for ShaderSettings {
             brightness: 15.0,
             vertex_color_mode: 1,
             color: Color::WHITE,
+            show_wireframe: true,
+            show_outline: true,
+            show_fill: true,
         }
     }
 }
@@ -336,10 +342,10 @@ fn post_process(
         // If scene extras were found, it will generate the line lists according to the json dictionary
         // Otherwise it will generate a line list for every edge of the mesh
 
-        for entity in children.iter_descendants(event.parent) {
-            if let Ok((mesh_handle, parent)) = mesh.get(entity) {
+        for this_entity in children.iter_descendants(event.parent) {
+            if let Ok((mesh_handle, parent)) = mesh.get(this_entity) {
                 if let Some(mesh) = mesh_assets.get_mut(mesh_handle) {
-                    commands.entity(entity).remove::<Handle<StandardMaterial>>();
+                    commands.entity(this_entity).remove::<Handle<StandardMaterial>>();
 
                     let smoothed_normals: Vec<[f32; 3]> = get_smoothed_normals(mesh).unwrap();
                     // invert_normals(&mut smoothed_normals);
@@ -351,7 +357,7 @@ fn post_process(
                     if !mesh.attribute(Mesh::ATTRIBUTE_COLOR).is_some() {
                         // If Vertex_Color is not present, add it with a constant color
                         let vertex_count = mesh.count_vertices();
-                        let constant_color = [1.0, 0.0, 1.0, 1.0]; // White color, adjust as needed
+                        let constant_color = [1.0, 0.0, 1.0, 0.0]; // White color, adjust as needed
                         let colors: Vec<[f32; 4]> = vec![constant_color; vertex_count];
                         mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
                     }
@@ -363,8 +369,10 @@ fn post_process(
                         shininess: 200.0,
                         specular_strength: 1.0,
                         vertex_color_mode: 1,
+                        visibility: 1.0,
                     });
-                    commands.entity(entity).insert(fill_material_handle.clone());
+                    commands.entity(this_entity).insert(fill_material_handle.clone())
+                        ;
 
                     // Add OutlineMaterial component
                     let outline_material_handle = outline_materials.add(OutlineMaterial {
@@ -372,8 +380,10 @@ fn post_process(
                         ..default()
                     });
                     commands
-                        .entity(entity)
-                        .insert(outline_material_handle.clone());
+                        .entity(this_entity)
+                        .insert(outline_material_handle.clone())
+                        
+                    ;
 
                     // To use the json line lists we need an index for each mesh which is encoded as a mesh level extra
                     // If this is succesfully parsed, and if the json dictionary was parsed and contains the key, we can use the line list
@@ -424,7 +434,7 @@ fn post_process(
 
                     let line_mesh = line_list_to_mesh(&line_list, &mesh);
                     let new_mesh_handle = mesh_assets.add(line_mesh);
-                    let skinned_mesh = skinned_meshes.get(entity).cloned(); // required for scenes with skinned mesh animations
+                    let skinned_mesh = skinned_meshes.get(this_entity).cloned(); // required for scenes with skinned mesh animations
 
                     let bundle = MaterialMeshBundle {
                         mesh: new_mesh_handle,
@@ -435,7 +445,7 @@ fn post_process(
                         ..Default::default()
                     };
 
-                    commands.entity(entity).with_children(|parent| {
+                    commands.entity(this_entity).with_children(|parent| {
                         let mut child_entity = parent.spawn(bundle);
 
                         // If the original entity had a SkinnedMesh component, add it to the new entity
@@ -575,36 +585,37 @@ fn ui_system(
         if ui.color_edit_button_rgba_unmultiplied(&mut color).changed() {
             shader_settings.color = Color::rgba(color[0], color[1], color[2], color[3]);
         }
+
+        ui.separator();
+        ui.heading("Shader Visibility");
+        ui.checkbox(&mut shader_settings.show_wireframe, "Show Wireframe");
+        ui.checkbox(&mut shader_settings.show_outline, "Show Outline");
+        ui.checkbox(&mut shader_settings.show_fill, "Show Fill");
     });
 
-    // Update all OutlineMaterial instances
-    // TODO: only update if changed
-    for material_handle in outline_materials.iter() {
-        // println!("b");
+     // Update all OutlineMaterial instances
+     for material_handle in outline_materials.iter() {
         if let Some(material) = outline_materials_assets.get_mut(material_handle) {
-            // println!("c");
             material.outline_width = shader_settings.outline_width;
             material.brightness = shader_settings.brightness;
             material.vertex_color_mode = shader_settings.vertex_color_mode;
             material.color = shader_settings.color.to_linear().to_vec4();
+            material.visibility = if shader_settings.show_outline { 1.0 } else { 0.0 };
         }
     }
 
     // Update all LineMaterial instances
-    // TODO: only update if changed
     for material_handle in line_materials.iter() {
-        // println!("d");
         if let Some(material) = line_materials_assets.get_mut(material_handle) {
-            // println!("e");
             material.displacement = shader_settings.wireframe_displacement;
             material.brightness = shader_settings.brightness;
             material.vertex_color_mode = shader_settings.vertex_color_mode;
             material.color = shader_settings.color.to_linear().to_vec4();
+            material.visibility = if shader_settings.show_wireframe { 1.0 } else { 0.0 };
         }
     }
 
     // Update all FillMaterial instances
-    // TODO: only update if changed
     for material_handle in fill_materials.iter() {
         if let Some(material) = fill_materials_assets.get_mut(material_handle) {
             material.displacement = shader_settings.fill_displacement;
@@ -612,8 +623,47 @@ fn ui_system(
             material.specular_strength = shader_settings.fill_specular_strength;
             material.vertex_color_mode = shader_settings.vertex_color_mode;
             material.color = shader_settings.color.to_linear().to_vec4();
+            material.visibility = if shader_settings.show_fill { 1.0 } else { 0.0 };
         }
     }
+
+    // // Update all OutlineMaterial instances
+    // // TODO: only update if changed
+    // for material_handle in outline_materials.iter() {
+    //     // println!("b");
+    //     if let Some(material) = outline_materials_assets.get_mut(material_handle) {
+    //         // println!("c");
+    //         material.outline_width = shader_settings.outline_width;
+    //         material.brightness = shader_settings.brightness;
+    //         material.vertex_color_mode = shader_settings.vertex_color_mode;
+    //         material.color = shader_settings.color.to_linear().to_vec4();
+    //     }
+    // }
+
+    // // Update all LineMaterial instances
+    // // TODO: only update if changed
+    // for material_handle in line_materials.iter() {
+    //     // println!("d");
+    //     if let Some(material) = line_materials_assets.get_mut(material_handle) {
+    //         // println!("e");
+    //         material.displacement = shader_settings.wireframe_displacement;
+    //         material.brightness = shader_settings.brightness;
+    //         material.vertex_color_mode = shader_settings.vertex_color_mode;
+    //         material.color = shader_settings.color.to_linear().to_vec4();
+    //     }
+    // }
+
+    // // Update all FillMaterial instances
+    // // TODO: only update if changed
+    // for material_handle in fill_materials.iter() {
+    //     if let Some(material) = fill_materials_assets.get_mut(material_handle) {
+    //         material.displacement = shader_settings.fill_displacement;
+    //         material.shininess = shader_settings.fill_shininess;
+    //         material.specular_strength = shader_settings.fill_specular_strength;
+    //         material.vertex_color_mode = shader_settings.vertex_color_mode;
+    //         material.color = shader_settings.color.to_linear().to_vec4();
+    //     }
+    // }
 }
 
 fn update_visibility(
