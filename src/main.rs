@@ -34,7 +34,9 @@ mod mesh_ops;
 mod outline_material;
 mod parse_extras;
 
-const ASTRO_PATH: &str = "gltf/astro.gltf";
+// const ASTRO_PATH: &str = "gltf/astro.gltf";
+const ASTRO_PATH: &str = "gltf/cube.gltf";
+// const ASTRO_PATH: &str = "gltf/uv_sphere.gltf";
 const TORUS_PATH: &str = "gltf/torus.gltf";
 const COUPE_PATH: &str = "gltf/coupe.gltf";
 const SPHERE_PATH: &str = "gltf/sphere.gltf";
@@ -355,6 +357,7 @@ fn post_process(
 
                     // Check for Vertex_Color attribute
                     if !mesh.attribute(Mesh::ATTRIBUTE_COLOR).is_some() {
+                        warn!("Vertex_Color attribute not found");
                         // If Vertex_Color is not present, add it with a constant color
                         let vertex_count = mesh.count_vertices();
                         let constant_color = [1.0, 0.0, 1.0, 0.0]; // White color, adjust as needed
