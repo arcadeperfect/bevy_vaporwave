@@ -3,6 +3,46 @@ import bmesh
 import json
 from bpy.types import Panel, Operator
 
+def add_indices():
+    selected_objects = bpy.context.selected_objects
+
+    if not selected_objects:
+        print("No objects selected. Please select at least one object.")
+        return
+
+    for primitive_idx, obj in enumerate(selected_objects):
+        if obj.type != 'MESH':
+            print(f"Skipping {obj.name}: Not a mesh object")
+            continue
+
+        # Assign primitive index to the object
+        obj["gltf_primitive_index"] = primitive_idx
+
+        # Create a BMesh from the object data
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+
+        # Ensure lookup table is up-to-date
+        bm.verts.ensure_lookup_table()
+
+        # Create a new custom attribute layer for vertex indices
+        vert_index_layer = bm.verts.layers.int.new('_VERT_INDEX')
+
+        # Iterate through all vertices and assign unique IDs
+        for idx, v in enumerate(bm.verts):
+            v[vert_index_layer] = idx
+
+        # Update the mesh with BMesh data
+        bm.to_mesh(obj.data)
+        obj.data.update()
+
+        # Free the BMesh
+        bm.free()
+
+        print(f"Object: {obj.name}")
+        print(f"  Assigned primitive index: {primitive_idx}")
+        print(f"  Added '_VERT_INDEX' attribute to {len(obj.data.vertices)} vertices")
+
 def get_selected_edges(obj):
     if obj.type != 'MESH':
         return []
@@ -209,6 +249,16 @@ def clear_primitive_extras(obj):
         print(f"No GLTF extras found on object {obj.name}")
 
 # Operators
+
+class VIEW3D_OT_add_indices(Operator):
+    bl_idname = "view3d.add_indices"
+    bl_label = "Add Unique Indices"
+    bl_description = "Add a unique index to each vert"
+    
+    def execute(self, context):
+        add_indices()
+        return {'FINISHED'}
+
 class VIEW3D_OT_add_visible_edges(Operator):
     bl_idname = "view3d.add_visible_edges"
     bl_label = "Add Visible Edges"
@@ -289,11 +339,9 @@ class VIEW3D_PT_edge_visibility(Panel):
         layout = self.layout
         
         box = layout.box()
-        box.label(text="Edge Selection")
+        box.label(text="Preparation")
         row = box.row()
-        row.operator("view3d.add_visible_edges", text="Add Visible Edges")
-        row = box.row()
-        row.operator("view3d.remove_visible_edges", text="Remove Visible Edges")
+        row.operator("view3d.add_indices", text="add_indices")
         row = box.row()
         row.operator("view3d.clear_visible_edges", text="Clear All Visible Edges")
         
@@ -307,12 +355,22 @@ class VIEW3D_PT_edge_visibility(Panel):
         row.operator("view3d.clear_primitive_extras", text="Clear Edge Data")
         
         box = layout.box()
-        box.label(text="Export")
+        box.label(text="Edge Selection")
         row = box.row()
-        row.operator("view3d.generate_edge_json", text="Export Edge List")
+        row.operator("view3d.add_visible_edges", text="Add Visible Edges")
+        row = box.row()
+        row.operator("view3d.remove_visible_edges", text="Remove Visible Edges")
+        
+        
+#        
+#        box = layout.box()
+#        box.label(text="Export")
+#        row = box.row()
+#        row.operator("view3d.generate_edge_json", text="Export Edge List")
 
 # Registration
 classes = (
+    VIEW3D_OT_add_indices,
     VIEW3D_OT_add_visible_edges,
     VIEW3D_OT_remove_visible_edges,
     VIEW3D_OT_clear_visible_edges,

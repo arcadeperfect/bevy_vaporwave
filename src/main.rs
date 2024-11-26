@@ -36,10 +36,8 @@ mod outline_material;
 mod parse_extras;
 
 const ASTRO_PATH: &str = "gltf/astro.gltf";
-// const ASTRO_PATH: &str = "gltf/cube.gltf";
-// const ASTRO_PATH: &str = "gltf/uv_sphere.gltf";
 const TORUS_PATH: &str = "gltf/torus.gltf";
-const COUPE_PATH: &str = "gltf/coupe2.gltf";
+const COUPE_PATH: &str = "gltf/coupe.gltf";
 const SPHERE_PATH: &str = "gltf/sphere.gltf";
 
 #[derive(Resource, PartialEq)]
@@ -139,7 +137,7 @@ const ATTRIBUTE_SMOOTHED_NORMAL: MeshVertexAttribute =
 
 fn main() {
     App::new()
-        .insert_resource(VisibleModel::Coupe)
+        .insert_resource(VisibleModel::Astro)
         .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(ShaderSettings::default())
         .add_plugins(
@@ -453,7 +451,6 @@ fn post_process(
                                 if let Ok(edge_data) =
                                     serde_json::from_str::<JsonLineList>(v.as_str().unwrap_or(""))
                                 {
-                                    println!("Parsed edges: {:?}", edge_data.line_list);
                                     Some(edge_data)
                                 } else {
                                     None
