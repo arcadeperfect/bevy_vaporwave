@@ -1,6 +1,5 @@
 use bevy::gltf::{GltfExtras, GltfSceneExtras};
 use bevy::prelude::Color;
-use bevy::render::mesh::VertexAttributeValues;
 use bevy::{
     animation::animate_targets,
     core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping},
@@ -18,12 +17,10 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use fill_material::FillMaterial;
 use line_material::LineMaterial;
 use mesh_ops::{
-    generate_random_vertex_colors, get_smoothed_normals, line_list_to_mesh, AsFloat4,
-    MeshToLineList, VertexOps,
+    get_smoothed_normals, line_list_to_mesh, MeshToLineList,
 };
 use outline_material::OutlineMaterial;
 use parse_extras::{parse_gltf_extra_json, JsonLineList};
-use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -47,17 +44,6 @@ enum VisibleModel {
     Torus,
     Sphere,
 }
-
-// #[derive(Component)]
-// struct ColorBuffer{
-//     colorz: Option<Vec<Vec<[f32; 4]>>>
-// }
-
-// impl Default for ColorBuffer{
-//     fn default() -> Self {
-//         Self { colorz: None }
-//     }
-// }
 
 #[derive(Component)]
 struct FillTag;
@@ -115,22 +101,6 @@ impl Default for ShaderSettings {
     }
 }
 
-#[derive(Component)]
-struct WireframeSettings {
-    original_colors: Vec<[f32; 4]>,
-    // alt_colors: Vec<[f32; 4]>, // TODO add an alt colors system
-    current_mode: i32,
-}
-
-impl Default for WireframeSettings {
-    fn default() -> Self {
-        Self {
-            original_colors: Vec::new(),
-            // alt_colors: Vec::new(),
-            current_mode: 1, // Default to vertex color mode
-        }
-    }
-}
 
 const ATTRIBUTE_VERT_INDEX: MeshVertexAttribute =
     MeshVertexAttribute::new("VERT_INDEX", 1237464976, VertexFormat::Float32);
@@ -138,8 +108,6 @@ const ATTRIBUTE_VERT_INDEX: MeshVertexAttribute =
 const ATTRIBUTE_SMOOTHED_NORMAL: MeshVertexAttribute =
     MeshVertexAttribute::new("SmoothNormal", 723495149, VertexFormat::Float32x3);
 
-// const ATTRIBUTE_ALT_COLOR: MeshVertexAttribute =
-//     MeshVertexAttribute::new("AltColor", 1948574392, VertexFormat::Float32x4);
 
 fn main() {
     App::new()
@@ -163,7 +131,7 @@ fn main() {
         .add_systems(Update, play_animation_once_loaded.before(animate_targets))
         .add_systems(Update, post_process)
         .add_systems(Update, ui_system) // Add this line
-        .add_systems(Update, update_visibility)
+        .add_systems(Update, update_scene_visibility)
         // .add_systems(Update, handle_color_switching)
         .run();
 }
@@ -235,7 +203,7 @@ fn spawn(mut commands: Commands, assets: Res<AssetServer>) {
                     .with_scale(Vec3::splat(1.0)),
                 ..default()
             },
-            WireframeSettings::default(),
+            // WireframeSettings::default(),
             CoupeSceneTag,
         ))
         .id();
@@ -249,7 +217,7 @@ fn spawn(mut commands: Commands, assets: Res<AssetServer>) {
                     .with_scale(Vec3::splat(1.)),
                 ..default()
             },
-            WireframeSettings::default(),
+            // WireframeSettings::default(),
             AstroSceneTag,
         ))
         .id();
@@ -263,7 +231,7 @@ fn spawn(mut commands: Commands, assets: Res<AssetServer>) {
                     .with_scale(Vec3::splat(1.)),
                 ..default()
             },
-            WireframeSettings::default(),
+            // WireframeSettings::default(),
             TorusSceneTag,
         ))
         .id();
@@ -277,22 +245,13 @@ fn spawn(mut commands: Commands, assets: Res<AssetServer>) {
                     .with_scale(Vec3::splat(1.)),
                 ..default()
             },
-            WireframeSettings::default(),
+            // WireframeSettings::default(),
             SphereSceneTag,
         ))
         .id();
 }
 
-#[derive(Component)]
-struct WheelRotator {
-    rotation_speed: f32,
-}
 
-// fn rotate_wheels(time: Res<Time>, mut query: Query<(&WheelRotator, &mut Transform)>) {
-//     for (wheel, mut transform) in query.iter_mut() {
-//         transform.rotate_x(wheel.rotation_speed * time.delta_seconds());
-//     }
-// }
 
 fn post_process(
     mut commands: Commands,
@@ -306,44 +265,18 @@ fn post_process(
     mut outline_materials: ResMut<Assets<OutlineMaterial>>, // Add FillMaterial resource
     mut mesh_assets: ResMut<Assets<Mesh>>,
     shader_settings: Res<ShaderSettings>,
-    mut wf: Query<&mut WireframeSettings>,
+    // mut wf: Query<&mut WireframeSettings>,
     skinned_meshes: Query<&SkinnedMesh>,
-    query: Query<(Entity, &Name), Without<WheelRotator>>,
+
 ) {
-    for (entity, name) in query.iter() {
-        if name.to_lowercase().contains("wheel") {
-            commands.entity(entity).insert(WheelRotator {
-                rotation_speed: 50.0, // Adjust this value to change rotation speed
-            });
-        }
-    }
 
     for event in events.read() {
-        // Only proceeed if the spawned mesh has a wireframe component
-
-        let mut wfs;
-
-        if wf.get(event.parent).is_err() {
-            continue;
-        } else {
-            wfs = wf.get_mut(event.parent).unwrap();
-        }
-
+        
         // Out of laziness I iterate through the whole scene until I find the scene level extra which contains a json dictionary
         // that encodes the line lists generated in blender, with the index of the mesh as the key
         // there will only be one of these, so once it finds it, it parses it and breaks the loop
         // TODO: better way to locate the scene level extra
 
-        let mut line_list_data_from_blender: Option<HashMap<String, JsonLineList>> = None;
-
-        for e in children.iter_descendants(event.parent) {
-            if let Ok(loaded_scene_extras) = scene_extras.get(e) {
-                if let Some(parsed) = parse_gltf_extra_json(&loaded_scene_extras.value) {
-                    line_list_data_from_blender = Some(parsed);
-                    break; // you only need to parse this once
-                }
-            }
-        }
 
         // Iterate through each mesh and apply the wireframe post processing
         // If scene extras were found, it will generate the line lists according to the json dictionary
@@ -372,6 +305,7 @@ fn post_process(
                         mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
                     }
 
+
                     // FILL
 
                     let fill_material_handle = fill_materials.add(FillMaterial {
@@ -382,10 +316,7 @@ fn post_process(
                         vertex_color_mode: 1,
                         visibility: 1.0,
                     });
-                    // commands
-                    //     .entity(this_entity)
-                    //     .insert(fill_material_handle.clone());
-                    
+
                     let skinned_mesh = skinned_meshes.get(this_entity).cloned(); // required for scenes with skinned mesh animations
 
                     commands.entity(this_entity).with_children(|parent| {
@@ -404,10 +335,6 @@ fn post_process(
                             child_entity.insert(skinned_mesh);
                         }
                     });
-                    
-                    
-                    
-                    
                     
                     
                     // OUTLINE
@@ -513,20 +440,7 @@ fn play_animation_once_loaded(
     coupe_scenes: Query<Entity, With<CoupeSceneTag>>,
 ) {
     for (entity, mut player) in &mut players {
-        /*
-        // Find the top-level parent that is tagged with AstroScene or CoupeScene
-        let mut current_entity = entity;
-        while let Ok(parent) = parent_query.get(current_entity) {
-            current_entity = parent.get();
-        }
-        */
 
-        /*
-        because i cheated and used chat gpt and don't understand, the below is a more verbose version of the above
-        the purpose is to identify which scene we are in denoted by the AstroScene and CoupeScene components
-
-        TODO: generic approach to this
-        */
 
         // Start with the current entity, which has an AnimationPlayer
         let mut current_entity = entity;
@@ -580,9 +494,6 @@ fn ui_system(
     mut fill_materials_assets: ResMut<Assets<FillMaterial>>,
     fill_materials: Query<&Handle<FillMaterial>>,
     mut visible_model: ResMut<VisibleModel>,
-    // mut wireframe_query: Query<&mut Visibility, With<WireframeTag>>,
-    // mut outline_query: Query<&mut Visibility, With<OutlineTag>>,
-    // // mut fill_query: Query<&mut Visibility, With<FillTag>>,
     mut visibility_set: ParamSet<(
         Query<&mut Visibility, With<FillTag>>,
         Query<&mut Visibility, With<OutlineTag>>,
@@ -712,7 +623,7 @@ fn ui_system(
     }
 }
 
-fn update_visibility(
+fn update_scene_visibility(
     visible_model: Res<VisibleModel>,
     mut coupe_query: Query<
         &mut Visibility,
