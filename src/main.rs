@@ -34,8 +34,8 @@ mod mesh_ops;
 mod outline_material;
 mod parse_extras;
 
-// const ASTRO_PATH: &str = "gltf/astro.gltf";
-const ASTRO_PATH: &str = "gltf/cube.gltf";
+const ASTRO_PATH: &str = "gltf/astro.gltf";
+// const ASTRO_PATH: &str = "gltf/cube.gltf";
 // const ASTRO_PATH: &str = "gltf/uv_sphere.gltf";
 const TORUS_PATH: &str = "gltf/torus.gltf";
 const COUPE_PATH: &str = "gltf/coupe.gltf";

@@ -1,4 +1,4 @@
-# Add or subtract selected edges from an edge attribute called _VISIBLE_EDGES
+# Add or subtract selected edges to / from  an edge attribute called _VISIBLE_EDGES
 
 
 import bpy
