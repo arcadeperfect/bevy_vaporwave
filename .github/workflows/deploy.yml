@@ -27,7 +27,7 @@ jobs:
       - name: Build
         run: |
           cargo build --release --target wasm32-unknown-unknown
-          wasm-bindgen --out-dir ./out/ --target web ./target/wasm32-unknown-unknown/release/bevy_wireframe.wasm
+          wasm-bindgen --out-dir ./out/ --target web ./target/wasm32-unknown-unknown/release/bevy_vaporwave.wasm
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
