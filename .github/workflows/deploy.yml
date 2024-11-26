@@ -22,7 +22,7 @@ jobs:
           override: true
 
       - name: Install wasm-bindgen-cli
-        run: cargo install wasm-bindgen-cli
+        run: cargo install -f wasm-bindgen-cli --version 0.2.95  # Match your project's version
 
       - name: Build
         run: |
