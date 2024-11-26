@@ -60,7 +60,7 @@ jobs:
           override: true
 
       - name: Install wasm-bindgen-cli
-        run: cargo install -f wasm-bindgen-cli --version 0.2.93
+        run: cargo install -f wasm-bindgen-cli --version 0.2.95
 
       - name: Create deployment directory
         run: mkdir -p dist
