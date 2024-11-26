@@ -1,8 +1,46 @@
+# # name: Deploy to GitHub Pages
+
+# # on:
+# #   push:
+# #     branches: [ main ]  # or master, depending on your default branch
+# #   workflow_dispatch:
+
+# # permissions:
+# #   contents: write
+
+# # jobs:
+# #   build-and-deploy:
+# #     runs-on: ubuntu-latest
+# #     steps:
+# #       - uses: actions/checkout@v2
+
+# #       - name: Install Rust
+# #         uses: actions-rs/toolchain@v1
+# #         with:
+# #           toolchain: stable
+# #           target: wasm32-unknown-unknown
+# #           override: true
+
+# #       - name: Install wasm-bindgen-cli
+# #         run: cargo install -f wasm-bindgen-cli --version 0.2.95  # Match your project's version
+
+# #       - name: Build
+# #         run: |
+# #           cargo build --release --target wasm32-unknown-unknown
+# #           wasm-bindgen --out-dir ./out/ --target web ./target/wasm32-unknown-unknown/release/bevy_vaporwave.wasm
+
+# #       - name: Deploy to GitHub Pages
+# #         uses: JamesIves/github-pages-deploy-action@v4
+# #         with:
+# #           folder: .
+# #           branch: gh-pages
+# #           clean: true  # Automatically remove deleted files from the deploy branch
+
 # name: Deploy to GitHub Pages
 
 # on:
 #   push:
-#     branches: [ main ]  # or master, depending on your default branch
+#     branches: [ main ]
 #   workflow_dispatch:
 
 # permissions:
@@ -22,19 +60,32 @@
 #           override: true
 
 #       - name: Install wasm-bindgen-cli
-#         run: cargo install -f wasm-bindgen-cli --version 0.2.95  # Match your project's version
+#         run: cargo install -f wasm-bindgen-cli --version 0.2.95
+
+#       - name: Create deployment directory
+#         run: mkdir -p dist
 
 #       - name: Build
 #         run: |
 #           cargo build --release --target wasm32-unknown-unknown
-#           wasm-bindgen --out-dir ./out/ --target web ./target/wasm32-unknown-unknown/release/bevy_vaporwave.wasm
+#           wasm-bindgen --out-dir ./dist/out/ --target web ./target/wasm32-unknown-unknown/release/bevy_vaporwave.wasm
+#           cp index.html dist/
+#           cp styles.css dist/
+          
+#       - name: List files for debugging
+#         run: |
+#           echo "Deployment directory contents:"
+#           ls -la dist/
+#           echo "\nOut directory contents:"
+#           ls -la dist/out/
 
 #       - name: Deploy to GitHub Pages
 #         uses: JamesIves/github-pages-deploy-action@v4
 #         with:
-#           folder: .
+#           folder: dist
 #           branch: gh-pages
-#           clean: true  # Automatically remove deleted files from the deploy branch
+#           clean: true
+
 
 name: Deploy to GitHub Pages
 
@@ -71,6 +122,7 @@ jobs:
           wasm-bindgen --out-dir ./dist/out/ --target web ./target/wasm32-unknown-unknown/release/bevy_vaporwave.wasm
           cp index.html dist/
           cp styles.css dist/
+          cp -r assets dist/
           
       - name: List files for debugging
         run: |
@@ -78,6 +130,8 @@ jobs:
           ls -la dist/
           echo "\nOut directory contents:"
           ls -la dist/out/
+          echo "\nAssets directory contents:"
+          ls -la dist/assets/
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
