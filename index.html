@@ -16,10 +16,32 @@
             <a href="/" class="back-arrow">alexharding.ooo</a>
             <h1 class="main-heading">Bevy Vaporwave</h1>
             <div id="wasm-container"></div>
+            <br>
             <h2><a href="https://github.com/arcadeperfect/bevy_vaporwave">Github</a></h2>
-            <p>Side project to learn some wgsl basics, gltf, and develop a look for my <a href="https://alexharding.ooo/posts/Rustroneer/">main Bevy project</a>.</p>
-            <p>I'm learning. The code is pretty garbage. If you're intetested though have at it.</p>
-            <p>The goal was to achieve a wireframe look without rendering every triangle, and without using textures.</p>
+            <br>
+            <p>Side project to learn the basics of wgsl and develop a look for my <a href="https://alexharding.ooo/posts/Rustroneer/">main Bevy project</a>.</p>
+            <br>
+            <p>I'm learning. The code is pretty garbage. I doubt I will continue work on this, but I will roll what I learned into the main project and hopefully it will be better that time. If you're intetested though <a href="https://github.com/arcadeperfect/bevy_vaporwave">Have at it</a>.</p>
+            <br>
+            <p>Features:</p>
+            <ul>
+                <li>Arbitrarily define edges to render, not render every triangle  </li>
+                <li>Varying colors per mesh, no textures</li>
+                <li>Optionally "Solid" wireframe, ie it occludes its own back faces and objects behind it</li>
+                <li>Outline for silhouette when visible edges are sparse</li>
+                <li>Support gltf animation</li>
+            </ul>
+            <br>
+            <p>I developed a simple workflow with Blender which allows you to mark edges for rendering, paint vertex colors and store the data in a custom gltf attribute (see video below). It isn't great but it does the job. The blender files and a python script are in the repo. Bevy then builds a mesh out of line primitives for the wireframe and uses the original mesh for a fill. The mesh is duplicated, dilated along normals and pushed backwards in clip space by a shader to create the outline.</p>
+            <br>
+            <p>Issues:</p>
+            <ul>
+                <li>Wireframe thickness cannot be set because this is not supported by wgpu line primitives</li>
+                <li>Clip space method for outline isn't ideal, a stencil buffer approach would be better but I couldn't work out how to do that with wgpu / bevy render pipeline</li>
+                <li>Assets are post processed in a system triggered by SceneInstanceReady events. Something that ties into Bevy's async asset loading would be much better </li>
+                <li>The mesh building algorithm is very slow with large meshes</li>
+            </ul>
+            <br>
         </div>
 
     </div>
