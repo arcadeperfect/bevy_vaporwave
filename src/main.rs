@@ -23,6 +23,7 @@ use mesh_ops::{
 };
 use outline_material::OutlineMaterial;
 use parse_extras::{parse_gltf_extra_json, JsonLineList};
+use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -38,7 +39,7 @@ const ASTRO_PATH: &str = "gltf/astro.gltf";
 // const ASTRO_PATH: &str = "gltf/cube.gltf";
 // const ASTRO_PATH: &str = "gltf/uv_sphere.gltf";
 const TORUS_PATH: &str = "gltf/torus.gltf";
-const COUPE_PATH: &str = "gltf/coupe.gltf";
+const COUPE_PATH: &str = "gltf/coupe2.gltf";
 const SPHERE_PATH: &str = "gltf/sphere.gltf";
 
 #[derive(Resource, PartialEq)]
@@ -138,7 +139,7 @@ const ATTRIBUTE_SMOOTHED_NORMAL: MeshVertexAttribute =
 
 fn main() {
     App::new()
-        .insert_resource(VisibleModel::Astro)
+        .insert_resource(VisibleModel::Coupe)
         .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(ShaderSettings::default())
         .add_plugins(
@@ -347,7 +348,9 @@ fn post_process(
         for this_entity in children.iter_descendants(event.parent) {
             if let Ok((mesh_handle, parent)) = mesh.get(this_entity) {
                 if let Some(mesh) = mesh_assets.get_mut(mesh_handle) {
-                    commands.entity(this_entity).remove::<Handle<StandardMaterial>>();
+                    commands
+                        .entity(this_entity)
+                        .remove::<Handle<StandardMaterial>>();
 
                     let smoothed_normals: Vec<[f32; 3]> = get_smoothed_normals(mesh).unwrap();
                     // invert_normals(&mut smoothed_normals);
@@ -374,8 +377,9 @@ fn post_process(
                         vertex_color_mode: 1,
                         visibility: 1.0,
                     });
-                    commands.entity(this_entity).insert(fill_material_handle.clone())
-                        ;
+                    commands
+                        .entity(this_entity)
+                        .insert(fill_material_handle.clone());
 
                     // Add OutlineMaterial component
                     let outline_material_handle = outline_materials.add(OutlineMaterial {
@@ -384,42 +388,85 @@ fn post_process(
                     });
                     commands
                         .entity(this_entity)
-                        .insert(outline_material_handle.clone())
-                        
-                    ;
+                        .insert(outline_material_handle.clone());
 
                     // To use the json line lists we need an index for each mesh which is encoded as a mesh level extra
                     // If this is succesfully parsed, and if the json dictionary was parsed and contains the key, we can use the line list
                     // Otherwise we generate a line list for every edge of the mesh
 
+                    // match &line_list_data_from_blender {
+                    //     Some(blender_data) => {
+                    //         if let Ok(mesh_extra) = extras.get(parent.get()) {
+                    //             if let Ok(json_value) =
+                    //                 serde_json::from_str::<Value>(&mesh_extra.1.value)
+                    //             {
+                    //                 if let Some(key) = json_value.get("gltf_primitive_index") {
+                    //                     if let Some(parsed_edge) =car
+                    //                         blender_data.get(&key.to_string())
+                    //                     {
+                    //                         parsed_line_list = Some(parsed_edge);
+                    //                     } else {
+                    //                         warn!("key not found in json line list data");
+                    //                     }
+                    //                 } else {
+                    //                     warn!("no key found for this primitive");
+                    //                 }
+                    //             } else {
+                    //                 warn!("Unable to parse json");
+                    //             }
+                    //         }
+                    //     }
+                    //     None => {
+                    //         info!("No line list data found for mesh, all triangles will be used");
+                    //     }
+                    // }
+
+                    // let mut line_list: Option<
+
+                    // #[derive(Debug, Deserialize)]
+                    // struct EdgeData {
+                    //     line_list: Vec<[i32; 2]>,
+                    // }
+
+                    // // Then parse it:
+                    // if let Ok(mesh_extra) = extras.get(parent.get()) {
+                    //     if let Ok(json_value) = serde_json::from_str::<Value>(&mesh_extra.1.value) {
+                    //         if let Some(v) = json_value.get("gltf_primitive_extras") {
+                    //             // Parse the inner string as JSON
+                    //             if let Ok(edge_data) =
+                    //                 serde_json::from_str::<EdgeData>(v.as_str().unwrap_or(""))
+                    //                 // serde_json::from_str::<JsonLineList>(v.as_str().unwrap_or(""))
+                    //             {
+                    //                 println!("Parsed edges: {:?}", edge_data.line_list);
+                    //                 // println!("Parsed edges: {:?}", edge_data.line_list);
+                    //                 // Now you can access edge_data.visibleEdges as a Vec<[i32; 2]>
+                    //             }
+                    //         }
+                    //     }
+                    // }
+
                     let mut parsed_line_list: Option<&JsonLineList> = None;
 
-                    match &line_list_data_from_blender {
-                        Some(blender_data) => {
-                            if let Ok(mesh_extra) = extras.get(parent.get()) {
-                                if let Ok(json_value) =
-                                    serde_json::from_str::<Value>(&mesh_extra.1.value)
+                    let parsed_line_list = if let Ok(mesh_extra) = extras.get(parent.get()) {
+                        if let Ok(json_value) = serde_json::from_str::<Value>(&mesh_extra.1.value) {
+                            if let Some(v) = json_value.get("gltf_primitive_extras") {
+                                if let Ok(edge_data) =
+                                    serde_json::from_str::<JsonLineList>(v.as_str().unwrap_or(""))
                                 {
-                                    if let Some(key) = json_value.get("gltf_primitive_index") {
-                                        if let Some(parsed_edge) =
-                                            blender_data.get(&key.to_string())
-                                        {
-                                            parsed_line_list = Some(parsed_edge);
-                                        } else {
-                                            warn!("key not found in json line list data");
-                                        }
-                                    } else {
-                                        warn!("no key found for this primitive");
-                                    }
+                                    println!("Parsed edges: {:?}", edge_data.line_list);
+                                    Some(edge_data)
                                 } else {
-                                    warn!("Unable to parse json");
+                                    None
                                 }
+                            } else {
+                                None
                             }
+                        } else {
+                            None
                         }
-                        None => {
-                            info!("No line list data found for mesh, all triangles will be used");
-                        }
-                    }
+                    } else {
+                        None
+                    };
 
                     // LineList stores the data required to build a mesh of lines
                     // It can be derived from gltf extra data, or generated for every triangle in the absence
@@ -428,7 +475,7 @@ fn post_process(
 
                     match parsed_line_list {
                         Some(p) => {
-                            line_list = mesh.mesh_to_line_list_from_json(p);
+                            line_list = mesh.mesh_to_line_list_from_json(&p);
                         }
                         None => {
                             line_list = mesh.mesh_to_line_list();
@@ -596,14 +643,18 @@ fn ui_system(
         ui.checkbox(&mut shader_settings.show_fill, "Show Fill");
     });
 
-     // Update all OutlineMaterial instances
-     for material_handle in outline_materials.iter() {
+    // Update all OutlineMaterial instances
+    for material_handle in outline_materials.iter() {
         if let Some(material) = outline_materials_assets.get_mut(material_handle) {
             material.outline_width = shader_settings.outline_width;
             material.brightness = shader_settings.brightness;
             material.vertex_color_mode = shader_settings.vertex_color_mode;
             material.color = shader_settings.color.to_linear().to_vec4();
-            material.visibility = if shader_settings.show_outline { 1.0 } else { 0.0 };
+            material.visibility = if shader_settings.show_outline {
+                1.0
+            } else {
+                0.0
+            };
         }
     }
 
@@ -614,7 +665,11 @@ fn ui_system(
             material.brightness = shader_settings.brightness;
             material.vertex_color_mode = shader_settings.vertex_color_mode;
             material.color = shader_settings.color.to_linear().to_vec4();
-            material.visibility = if shader_settings.show_wireframe { 1.0 } else { 0.0 };
+            material.visibility = if shader_settings.show_wireframe {
+                1.0
+            } else {
+                0.0
+            };
         }
     }
 

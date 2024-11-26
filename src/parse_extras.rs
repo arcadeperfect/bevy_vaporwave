@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 #[derive(serde::Deserialize, Debug)]
 pub struct JsonLineList {
+    #[serde(rename = "visibleEdges")]
     pub line_list: Vec<[u32; 2]>,
 }
 
