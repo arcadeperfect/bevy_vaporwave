@@ -2,32 +2,36 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main ]  # or master, depending on your default branch
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        target: wasm32-unknown-unknown
-        override: true
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
 
-    - name: Install wasm-bindgen-cli
-      run: cargo install wasm-bindgen-cli
+      - name: Install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli
 
-    - name: Build
-      run: |
-        cargo build --release --target wasm32-unknown-unknown
-        wasm-bindgen --out-dir ./out/ --target web ./target/wasm32-unknown-unknown/release/bevy_wireframe.wasm
+      - name: Build
+        run: |
+          cargo build --release --target wasm32-unknown-unknown
+          wasm-bindgen --out-dir ./out/ --target web ./target/wasm32-unknown-unknown/release/bevy_wireframe.wasm
 
-    - name: Deploy to GitHub Pages
-      uses: JamesIves/github-pages-deploy-action@4.1.5
-      with:
-        branch: gh-pages
-        folder: .  # Deploy the entire repository
-        clean: false  # Don't remove existing files
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: .
+          branch: gh-pages
+          clean: true  # Automatically remove deleted files from the deploy branch
