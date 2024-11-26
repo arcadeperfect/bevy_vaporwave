@@ -60,6 +60,12 @@ enum VisibleModel {
 // }
 
 #[derive(Component)]
+struct FillTag;
+#[derive(Component)]
+struct WireframeTag;
+#[derive(Component)]
+struct OutlineTag;
+#[derive(Component)]
 struct AstroSceneTag;
 
 #[derive(Component)]
@@ -366,7 +372,8 @@ fn post_process(
                         mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
                     }
 
-                    // Add FillMaterial component
+                    // FILL
+
                     let fill_material_handle = fill_materials.add(FillMaterial {
                         color: Vec4::new(1.0, 0.0, 0.0, 1.0),
                         displacement: 0.0,
@@ -375,22 +382,66 @@ fn post_process(
                         vertex_color_mode: 1,
                         visibility: 1.0,
                     });
-                    commands
-                        .entity(this_entity)
-                        .insert(fill_material_handle.clone());
+                    // commands
+                    //     .entity(this_entity)
+                    //     .insert(fill_material_handle.clone());
+                    
+                    let skinned_mesh = skinned_meshes.get(this_entity).cloned(); // required for scenes with skinned mesh animations
+
+                    commands.entity(this_entity).with_children(|parent| {
+                        let mut child_entity = parent.spawn((
+                            MaterialMeshBundle {
+                                mesh: mesh_handle.clone(),
+                                material: fill_material_handle,
+                                visibility: Visibility::Inherited,
+                                ..Default::default()
+                            },
+                            FillTag,
+                        ));
+
+                        // If the original entity had a SkinnedMesh component, add it to the new entity
+                        if let Ok(skinned_mesh) = skinned_mesh {
+                            child_entity.insert(skinned_mesh);
+                        }
+                    });
+                    
+                    
+                    
+                    
+                    
+                    
+                    // OUTLINE
 
                     // Add OutlineMaterial component
                     let outline_material_handle = outline_materials.add(OutlineMaterial {
                         outline_width: shader_settings.outline_width,
                         ..default()
                     });
-                    commands
-                        .entity(this_entity)
-                        .insert(outline_material_handle.clone());
 
-                    
 
-                    // let mut parsed_line_list: Option<&JsonLineList> = None;
+                    let skinned_mesh = skinned_meshes.get(this_entity).cloned(); // required for scenes with skinned mesh animations
+
+                    commands.entity(this_entity).with_children(|parent| {
+                        let mut child_entity = parent.spawn((
+                            MaterialMeshBundle {
+                                mesh: mesh_handle.clone(),
+                                material: outline_material_handle,
+                                visibility: Visibility::Inherited,
+                                ..Default::default()
+                            },
+                            OutlineTag,
+                        ));
+
+                        // If the original entity had a SkinnedMesh component, add it to the new entity
+                        if let Ok(skinned_mesh) = skinned_mesh {
+                            child_entity.insert(skinned_mesh);
+                        }
+                    });
+
+                    // WIRE FRAME
+
+                    // LineList stores the data required to build a mesh of lines
+                    // It can be derived from gltf extra data, or generated for every triangle in the absence
 
                     let parsed_line_list = if let Ok(mesh_extra) = extras.get(parent.get()) {
                         if let Ok(json_value) = serde_json::from_str::<Value>(&mesh_extra.1.value) {
@@ -412,9 +463,6 @@ fn post_process(
                         None
                     };
 
-                    // LineList stores the data required to build a mesh of lines
-                    // It can be derived from gltf extra data, or generated for every triangle in the absence
-
                     let line_list;
 
                     match parsed_line_list {
@@ -430,17 +478,19 @@ fn post_process(
                     let new_mesh_handle = mesh_assets.add(line_mesh);
                     let skinned_mesh = skinned_meshes.get(this_entity).cloned(); // required for scenes with skinned mesh animations
 
-                    let bundle = MaterialMeshBundle {
-                        mesh: new_mesh_handle,
-                        material: line_materials.add(LineMaterial {
-                            displacement: 1.5,
-                            ..default()
-                        }),
-                        ..Default::default()
-                    };
-
                     commands.entity(this_entity).with_children(|parent| {
-                        let mut child_entity = parent.spawn(bundle);
+                        let mut child_entity = parent.spawn((
+                            MaterialMeshBundle {
+                                mesh: new_mesh_handle,
+                                material: line_materials.add(LineMaterial {
+                                    displacement: 1.5,
+                                    ..default()
+                                }),
+                                visibility: Visibility::Inherited,
+                                ..Default::default()
+                            },
+                            WireframeTag,
+                        ));
 
                         // If the original entity had a SkinnedMesh component, add it to the new entity
                         if let Ok(skinned_mesh) = skinned_mesh {
@@ -530,6 +580,14 @@ fn ui_system(
     mut fill_materials_assets: ResMut<Assets<FillMaterial>>,
     fill_materials: Query<&Handle<FillMaterial>>,
     mut visible_model: ResMut<VisibleModel>,
+    // mut wireframe_query: Query<&mut Visibility, With<WireframeTag>>,
+    // mut outline_query: Query<&mut Visibility, With<OutlineTag>>,
+    // // mut fill_query: Query<&mut Visibility, With<FillTag>>,
+    mut visibility_set: ParamSet<(
+        Query<&mut Visibility, With<FillTag>>,
+        Query<&mut Visibility, With<OutlineTag>>,
+        Query<&mut Visibility, With<WireframeTag>>,
+    )>,
 ) {
     egui::Window::new("Shader Controls").show(contexts.ctx_mut(), |ui| {
         ui.add(
@@ -628,6 +686,30 @@ fn ui_system(
         }
     }
 
+    // Update visibility
+    for mut visibility in visibility_set.p2().iter_mut() {
+        *visibility = if shader_settings.show_wireframe {
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        };
+    }
+
+    for mut visibility in visibility_set.p1().iter_mut() {
+        *visibility = if shader_settings.show_outline {
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        };
+    }
+
+    for mut visibility in visibility_set.p0().iter_mut() {
+        *visibility = if shader_settings.show_fill {
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        };
+    }
 }
 
 fn update_visibility(
