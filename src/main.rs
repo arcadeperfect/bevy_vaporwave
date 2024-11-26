@@ -20,9 +20,8 @@ use mesh_ops::{
     get_smoothed_normals, line_list_to_mesh, MeshToLineList,
 };
 use outline_material::OutlineMaterial;
-use parse_extras::{parse_gltf_extra_json, JsonLineList};
+use parse_extras::JsonLineList;
 use serde_json::Value;
-use std::collections::HashMap;
 use std::time::Duration;
 
 mod camera_plugin;
