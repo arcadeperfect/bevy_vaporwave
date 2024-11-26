@@ -87,6 +87,59 @@
 #           clean: true
 
 
+# name: Deploy to GitHub Pages
+
+# on:
+#   push:
+#     branches: [ main ]
+#   workflow_dispatch:
+
+# permissions:
+#   contents: write
+
+# jobs:
+#   build-and-deploy:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+
+#       - name: Install Rust
+#         uses: actions-rs/toolchain@v1
+#         with:
+#           toolchain: stable
+#           target: wasm32-unknown-unknown
+#           override: true
+
+#       - name: Install wasm-bindgen-cli
+#         run: cargo install -f wasm-bindgen-cli --version 0.2.95
+
+#       - name: Create deployment directory
+#         run: mkdir -p dist
+
+#       - name: Build
+#         run: |
+#           cargo build --release --target wasm32-unknown-unknown
+#           wasm-bindgen --out-dir ./dist/out/ --target web ./target/wasm32-unknown-unknown/release/bevy_vaporwave.wasm
+#           cp index.html dist/
+#           cp styles.css dist/
+#           cp -r assets dist/
+          
+#       - name: List files for debugging
+#         run: |
+#           echo "Deployment directory contents:"
+#           ls -la dist/
+#           echo "\nOut directory contents:"
+#           ls -la dist/out/
+#           echo "\nAssets directory contents:"
+#           ls -la dist/assets/
+
+#       - name: Deploy to GitHub Pages
+#         uses: JamesIves/github-pages-deploy-action@v4
+#         with:
+#           folder: dist
+#           branch: gh-pages
+#           clean: true
+
 name: Deploy to GitHub Pages
 
 on:
@@ -102,8 +155,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2  # Need history to check for changes
+
+      - name: Check for Rust changes
+        id: check_changes
+        run: |
+          # Check if any Rust files or Cargo.toml have changed
+          if git diff --name-only HEAD^ HEAD | grep -qE '\.rs$|Cargo.toml|Cargo.lock'; then
+            echo "rust_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "rust_changed=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Install Rust
+        if: steps.check_changes.outputs.rust_changed == 'true'
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -111,15 +177,28 @@ jobs:
           override: true
 
       - name: Install wasm-bindgen-cli
+        if: steps.check_changes.outputs.rust_changed == 'true'
         run: cargo install -f wasm-bindgen-cli --version 0.2.95
 
       - name: Create deployment directory
         run: mkdir -p dist
 
-      - name: Build
+      - name: Build WASM
+        if: steps.check_changes.outputs.rust_changed == 'true'
         run: |
           cargo build --release --target wasm32-unknown-unknown
           wasm-bindgen --out-dir ./dist/out/ --target web ./target/wasm32-unknown-unknown/release/bevy_vaporwave.wasm
+
+      - name: Copy existing WASM files
+        if: steps.check_changes.outputs.rust_changed == 'false'
+        run: |
+          # Get the files from the previous gh-pages build
+          git fetch origin gh-pages
+          git checkout origin/gh-pages -- out
+          cp -r out dist/
+
+      - name: Copy web files
+        run: |
           cp index.html dist/
           cp styles.css dist/
           cp -r assets dist/
