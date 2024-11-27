@@ -1067,9 +1067,7 @@ function __wbg_get_imports() {
         return ret;
     };
     imports.wbg.__wbg_focus_06621101cc79f5d8 = function() { return handleError(function (arg0) {
-        const scrollPos = window.scrollY;
-        getObject(arg0).focus();
-        window.scrollTo(0, scrollPos);
+        arg0.focus();
     }, arguments) };
     imports.wbg.__wbg_fetch_0b9f0f8239b62e25 = function(arg0, arg1, arg2) {
         const ret = arg0.fetch(getStringFromWasm0(arg1, arg2));
