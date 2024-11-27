@@ -27,6 +27,23 @@
     margin: 0;
 }
 
+html {
+    /* Remove smooth scrolling */
+    scroll-behavior: auto;
+    /* Prevent automatic scroll anchoring */
+    overflow-anchor: none;
+}
+
+/* Ensure the page content starts at the top */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    /* Force initial scroll position */
+    position: relative;
+    top: 0;
+}
+
 body {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
@@ -190,3 +207,4 @@ a:hover {
     position: static;
     margin-left: 4px;  /* Align with heading */
 }
+
