@@ -11,7 +11,25 @@
 </head>
 
 <body class="color-scheme-home">
-    
+    <script>
+        window.addEventListener('DOMContentLoaded', (event) => {
+            // Find the canvas element created by Bevy
+            const canvas = document.querySelector('canvas');
+            if (canvas) {
+                // Save the original focus method
+                const originalFocus = canvas.focus.bind(canvas);
+                // Override the focus method to include preventScroll
+                canvas.focus = function(options) {
+                    if (!options || typeof options !== 'object') {
+                        options = { preventScroll: true };
+                    } else {
+                        options.preventScroll = true;
+                    }
+                    originalFocus(options);
+                };
+            }
+        });
+    </script>
     <div class="grid">
         <div class="main-column">
             <!-- <a href="https://alexharding.ooo" class="back-arrow">alexharding.ooo</a> <a href="https://bsky.app/profile/alexharding.bsky.social" class="back-arrow">bluesky</a> -->
