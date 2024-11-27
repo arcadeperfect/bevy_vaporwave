@@ -1,23 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bevy Vaporwave</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Roboto+Mono&display=swap"
+        rel="stylesheet">
 </head>
 
 <body class="color-scheme-home">
+    
     <div class="grid">
         <div class="main-column">
+            <!-- <a href="https://alexharding.ooo" class="back-arrow">alexharding.ooo</a> <a href="https://bsky.app/profile/alexharding.bsky.social" class="back-arrow">bluesky</a> -->
             <span class="nav-links">
                 <a href="https://alexharding.ooo" class="nice-links">alexharding.ooo</a>
                 &nbsp;&nbsp;&nbsp;
                 <a href="https://bsky.app/profile/alexharding.bsky.social" class="nice-links">bluesky</a>
             </span>
             <h1 class="main-heading">Bevy Vaporwave</h1>
-            <div id="wasm-container" tabindex="-1"></div>
+            <div id="wasm-container"></div>
             <br>
             <h2><a href="https://github.com/arcadeperfect/bevy_vaporwave">Github</a></h2>
             <br>
@@ -64,30 +68,22 @@
             </span>
             <br>
             <br>
+
         </div>
+
+    </div>
     </div>
 
     <script type="module">
         import init from './out/bevy_vaporwave.js';
 
         async function run() {
-            window.scrollTo(0, 0);
-
             const wasmContainer = document.getElementById('wasm-container');
-            
+
             const observer = new MutationObserver((mutations) => {
                 for (let mutation of mutations) {
                     for (let node of mutation.addedNodes) {
                         if (node.tagName === 'CANVAS') {
-                            node.setAttribute('tabindex', '-1');
-                            
-                            const originalFocus = node.focus.bind(node);
-                            node.focus = function() {
-                                const scrollPos = window.scrollY;
-                                originalFocus();
-                                requestAnimationFrame(() => window.scrollTo(0, scrollPos));
-                            };
-
                             node.style.width = '100%';
                             node.style.height = '100%';
                             wasmContainer.appendChild(node);
@@ -102,15 +98,8 @@
             await init();
         }
 
-        if ('scrollRestoration' in history) {
-            history.scrollRestoration = 'manual';
-        }
-
-        if (document.readyState === 'complete') {
-            run();
-        } else {
-            window.addEventListener('load', run);
-        }
+        run();
     </script>
 </body>
+
 </html>
