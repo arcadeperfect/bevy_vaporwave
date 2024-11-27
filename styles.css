@@ -1,5 +1,3 @@
-/* CSS File */
-
 :root {
     --base-main-bg: black;
     --base-main-text: rgb(35, 174, 151);
@@ -15,8 +13,6 @@
     --accent-main: #1fe0ac;
 }
 
-/* Alternate Color Schemes omitted for brevity */
-
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Roboto+Mono&display=swap');
 
 /* RESET */
@@ -28,20 +24,14 @@
 }
 
 html {
-    /* Remove smooth scrolling */
-    scroll-behavior: auto;
-    /* Prevent automatic scroll anchoring */
+    scroll-behavior: auto !important;
     overflow-anchor: none;
 }
 
-/* Ensure the page content starts at the top */
 body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    /* Force initial scroll position */
-    position: relative;
-    top: 0;
 }
 
 body {
@@ -64,7 +54,7 @@ p, h1, h2, h3, h4, h5, h6 {
 
 a {
     text-decoration: none;
-    color: var(--link) !important; /* Override the .main-column a color */
+    color: var(--link) !important;
 }
 
 ul {
@@ -99,7 +89,7 @@ p {
 .main-column {
     background-color: var(--base-main-bg);
     color: var(--base-main-text);
-    padding: 20px 100px 0 20px; /* top right bottom left */
+    padding: 20px 100px 0 20px;
 }
 
 .main-column a {
@@ -112,7 +102,6 @@ p {
 .main-column ol,
 .main-column li {
     max-width: 750px;
-    /* Text is aligned to the left by default */
 }
 
 li {
@@ -143,6 +132,7 @@ a:hover {
     height: 0;
     padding-bottom: 56.25%;
     position: relative;
+    isolation: isolate;
 }
 
 #wasm-container canvas {
@@ -151,6 +141,13 @@ a:hover {
     left: 0;
     width: 100%;
     height: 100%;
+    outline: none;
+    touch-action: none;
+}
+
+#wasm-container:focus,
+#wasm-container canvas:focus {
+    outline: none;
 }
 
 /* VIDEO WRAPPER */
@@ -159,7 +156,7 @@ a:hover {
     width: 100%;
     max-width: 750px;
     margin: 20px 0;
-    aspect-ratio: 16 / 9; /* Maintains the aspect ratio */
+    aspect-ratio: 16 / 9;
     overflow: hidden;
 }
 
@@ -187,8 +184,8 @@ a:hover {
     .video-wrapper {
         width: 100%;
         max-width: 100%;
-        margin: 10px 0; /* Adjusted for smaller screens */
-        padding-bottom: 56.25%; /* Ensure aspect ratio is maintained */
+        margin: 10px 0;
+        padding-bottom: 56.25%;
     }
 
     .main-column p,
@@ -201,10 +198,9 @@ a:hover {
 
 .nice-links {
     text-decoration: none;
-    color: var(--link) !important; /* Override the .main-column a color */
+    color: var(--link) !important;
     font-size: 20px;
     display: inline;
     position: static;
-    margin-left: 4px;  /* Align with heading */
+    margin-left: 4px;
 }
-
