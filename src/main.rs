@@ -110,7 +110,7 @@ const ATTRIBUTE_SMOOTHED_NORMAL: MeshVertexAttribute =
 
 fn main() {
     App::new()
-        .insert_resource(VisibleModel::Astro)
+        .insert_resource(VisibleModel::Sphere)
         .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(ShaderSettings::default())
         .add_plugins(
